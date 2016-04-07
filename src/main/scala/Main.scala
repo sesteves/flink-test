@@ -21,9 +21,7 @@ object Main {
       val rawStream2 = env.socketTextStream("ginja-a1", 8800, maxRetry = -1)
 
 
-
       val joinedStream = new MultiWindowsJoinedStreams(rawStream1, rawStream2)
-
 
 
       val stream = joinedStream
