@@ -72,7 +72,7 @@ object Main {
       val joinedStream = new MultiWindowsJoinedStreams(messageStream.getJavaStream, messageStream.getJavaStream)
 
       val keySelector = new KeySelector[String, String] {
-        override def getKey(value: String): String = return value._1
+        override def getKey(value: String): String = return value
       }
 
       joinedStream.where(keySelector)
@@ -102,8 +102,6 @@ object Main {
 
       env.execute("flink-test")
     }
-
-
 
 
 }
