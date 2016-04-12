@@ -25,13 +25,12 @@ object Main {
 
       // Based on https://github.com/yahoo/streaming-benchmarks/blob/master/flink-benchmarks/src/main/java/flink/benchmark/AdvertisingTopologyNative.java
 
-      val parameterTool = ParameterTool.fromArgs(args);
 
       val kafkaPartitions = 1
       val hosts = 1
       val cores = 8
 
-      val params = ParameterTool.fromArgs(args)
+      // val params = ParameterTool.fromArgs(args)
       // val params = ParameterTool.fromSystemProperties()
       val properties = new Properties()
       properties.setProperty("bootstrap.servers", "ginja-a1:9092")
@@ -50,7 +49,7 @@ object Main {
 
 
       val env = StreamExecutionEnvironment.getExecutionEnvironment
-      env.setParallelism(hosts * cores);
+      env.setParallelism(hosts * cores)
 
 
 
@@ -69,24 +68,27 @@ object Main {
 
       env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-      final KeySelector<Tuple2<String, Long>, String> keySelector = new KeySelector<Tuple2<String, Long>, String>() {
-        private static final long serialVersionUID = -1787574339917074648L;
-
-        @Override
-        public String getKey(Tuple2<String, Long> value) throws Exception {
-          return value.f0;
-        }
-      };
 
       val joinedStream = new MultiWindowsJoinedStreams(messageStream.getJavaStream, messageStream.getJavaStream)
 
-      joinedStream.where(new KeySelector[String, String] {
-        def getKey(value: Tuple2[String, String]): String = return value._1
+      val keySelector = new KeySelector[String, String] {
+        override def getKey(value: String): String = return value._1
+      }
+
+      joinedStream.where(keySelector)
+        .window(SlidingTimeWindows.of(Time.of(25, TimeUnit.SECONDS), Time.of(5, TimeUnit.SECONDS)))
+        .equalTo(keySelector)
+        .window(TumblingTimeWindows.of(Time.of(5, TimeUnit.SECONDS)))
 
 
-      })
+        .apply(new JoinFunction<Tuple2<String, Long>, Tuple2<String, Long>, Tuple3<String, Long, Long>>() {
+          private static final long serialVersionUID = -3625150954096822268L;
 
-
+          @Override
+          public Tuple3<String, Long, Long> join(Tuple2<String, Long> first, Tuple2<String, Long> second) throws Exception {
+            return new Tuple3<>(first.f0, first.f1, second.f1);
+          }
+        });
 
 
 
