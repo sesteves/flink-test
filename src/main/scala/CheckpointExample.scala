@@ -1,4 +1,12 @@
+
+import java.util.concurrent.TimeUnit
+
+import org.apache.flink.api.scala._
+import org.apache.flink.api.common.functions.FlatMapFunction
+import org.apache.flink.streaming.api.checkpoint.Checkpointed
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.api.windowing.assigners.{SlidingTimeWindows, TumblingTimeWindows}
+import org.apache.flink.streaming.api.windowing.time.{EventTime, Time}
 
 /**
   * Created by sesteves on 20-04-2016.
@@ -11,9 +19,10 @@ object CheckpointExample {
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     // env.setParallelism()
+    env.setStreamTimeCharacteristic(EventTime)
 
-    // checkpoint every 1 sec
-    env.enableCheckpointing(1000)
+    // checkpoint every 10 sec
+    env.enableCheckpointing(10000)
 
     // val adStream = env.socketTextStream("localhost", 8800, maxRetry = -1)
     // val clickStream = env.socketTextStream("localhost", 8801, maxRetry = -1)
@@ -22,6 +31,9 @@ object CheckpointExample {
     val clickStream = env.addSource(new EventsGeneratorSource(true))
 
 
+    adStream.map(e => (1,1))
+      .windowAll(SlidingTimeWindows.of(Time.of(10, TimeUnit.SECONDS), Time.of(10, TimeUnit.SECONDS)))
+      .reduce((a: (Int, Int), b: (Int, Int)) => (a._1 + b._1, a._2 + b._2))
 
 
 
